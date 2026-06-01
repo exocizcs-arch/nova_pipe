@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir \
     dbt-duckdb \
     httpx
 
-COPY ..
+COPY . .
 
 ENV PREFECT_API_URL=http://prefect-server:4200/api
 
