@@ -5,6 +5,7 @@ services:
     image: prefecthq/prefect:3-python3.13
     container_name: prefect-server
     restart: always
+    command: prefect server start
     volumes:
       - ./data/prefect_data:/root/.prefect
     ports:
