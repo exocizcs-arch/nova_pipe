@@ -37,6 +37,8 @@ services:
       resources:
         limits:
           memory: 1G
+    networks:
+      - novapipe
 
 volumes:
   prefect_data:
