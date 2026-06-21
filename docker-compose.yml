@@ -1,26 +1,27 @@
 version: '3.8'
 
 services:
+  # ==========================================
+  # 1. ORCHESTRATION LAYER
+  # ==========================================
   prefect-server:
     image: prefecthq/prefect:3-python3.13
     container_name: prefect-server
     restart: always
-    command: prefect server start
+    command: prefect server start --host 0.0.0.0
+    env_file:
+      - .env
     volumes:
       - ./data/prefect_data:/root/.prefect
     ports:
       - "4200:4200"
-    environment:
-      - PREFECT_SERVER_API_HOST=0.0.0.0
-      - PREFECT_API_URL=http://0.0.0.0:4200/api
     deploy:
       resources:
         limits:
-          memory:
-            600M
+          memory: 600M
     networks:
       - novapipe
-  
+
   prefect-worker:
     build:
       context: ./prefect
@@ -31,8 +32,9 @@ services:
     restart: always
     volumes:
       - ./data/general_data:/data
-    environment:
-      - PREFECT_API_URL=http://prefect-server:4200/api
+      - ./prefect/pipeline:/app/pipeline
+    env_file:
+      - .env
     command: prefect worker start --pool 'default-agent-pool'
     deploy:
       resources:
@@ -41,9 +43,102 @@ services:
     networks:
       - novapipe
 
-volumes:
-  prefect_data:
-  general_data:
+  # ==========================================
+  # 2. INGESTION LAYER (Real-time & Batch)
+  # ==========================================
+  webhook-ingestion:
+    image: python:3.11-slim
+    container_name: webhook-ingestion
+    restart: always
+    command: >
+      bash -c "pip install fastapi uvicorn fastparquet pandas && uvicorn app:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/general_data/landing_zone:/landing_zone
+      - ./app/webhook:/app
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - novapipe
+
+  python-extractor:
+    image: python:3.11-slim
+    container_name: python-extractor
+    command: >
+      bash -c "pip install requests pandas pyarrow duckdb && tail -f /dev/null"
+    volumes:
+      - ./data/general_data:/data
+      - ./elt:/elt
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    networks:
+      - novapipe
+
+  # ==========================================
+  # 3. TRANSFORMATION LAYER
+  # ==========================================
+  dbt-transformer:
+    image: python:3.11-slim
+    container_name: dbt-transformer
+    command: >
+      bash -c "pip install dbt-duckdb && tail -f /dev/null"
+    volumes:
+      - ./data/general_data:/data
+      - ./elt:/elt
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+    networks:
+      - novapipe
+
+  # ==========================================
+  # 4. AUDIT & RECONCILIATION LAYER
+  # ==========================================
+  data-quality-auditor:
+    image: python:3.11-slim
+    container_name: data-quality-auditor
+    command: >
+      bash -c "pip install great_expectations duckdb && tail -f /dev/null"
+    volumes:
+      - ./data/general_data:/data
+      - ./gx:/gx
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks:
+      - novapipe
+
+  # ==========================================
+  # 5. VISUALIZATION LAYER
+  # ==========================================
+  visualization:
+    image: python:3.11-slim
+    container_name: visualization
+    restart: always
+    command: >
+      bash -c "pip install streamlit duckdb pandas && streamlit run /app/dashboard.py --server.port=8501 --server.address=0.0.0.0"
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data/general_data:/data
+      - ./app/streamlit:/app
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    networks:
+      - novapipe
 
 networks:
   novapipe:
+    driver: bridge
