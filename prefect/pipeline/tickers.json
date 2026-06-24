@@ -1,0 +1,17 @@
+{
+  "stocks": [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN"
+  ],
+  "forex": [
+    "EURUSD=X",
+    "JPY=X",
+    "GBPUSD=X"
+  ],
+  "crypto": [
+    "BTC-USD",
+    "ETH-USD"
+  ]
+}
