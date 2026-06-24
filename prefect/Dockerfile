@@ -10,16 +10,10 @@ WORKDIR /app
 
 COPY pipeline/requirements.txt ./pipeline/requirements.txt
 
-RUN pip install --no-cache-dir \
-    prefect \
-    prefect-dbt \
-    duckdb \
-    dbt-duckdb \
-    httpx \
-    -r ./pipeline/requirements.txt
+RUN pip install --no-cache-dir -r ./pipeline/requirements.txt
 
 COPY . .
 
-ENV PREFECT_API_URL=http://prefect-server:4200/api
+CMD ["tail", "-f", "/dev/null"]
 
 

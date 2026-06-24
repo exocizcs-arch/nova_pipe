@@ -51,7 +51,7 @@ services:
     container_name: webhook-ingestion
     restart: always
     command: >
-      bash -c "pip install fastapi uvicorn fastparquet pandas && uvicorn app:app --host 0.0.0.0 --port 8000"
+      bash -c "pip install fastapi uvicorn fastparquet pandas yfinance && uvicorn app:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     volumes:
@@ -65,13 +65,13 @@ services:
       - novapipe
 
   python-extractor:
-    image: python:3.11-slim
+    build:
+      context: ./prefect
+      dockerfile: Dockerfile
     container_name: python-extractor
-    command: >
-      bash -c "pip install requests pandas pyarrow duckdb && tail -f /dev/null"
     volumes:
       - ./data/general_data:/data
-      - ./elt:/elt
+      - ./prefect/pipeline:/app/pipeline
     deploy:
       resources:
         limits:
