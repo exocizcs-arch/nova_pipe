@@ -1,5 +1,9 @@
 import os
+import tempfile
+import logging
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 class DataLakeStorage:
@@ -12,21 +16,34 @@ class DataLakeStorage:
         self.base_path = base_path
         os.makedirs(self.base_path, exist_ok=True)
 
-    def save_to_parquet(self, df: pd.DataFrame, filename: str):
+    def save_to_parquet(self, df: pd.DataFrame, filename: str) -> bool:
         """
-        Saves a pandas DataFrame to a Parquet file.
+        Saves a pandas DataFrame to a Parquet file, creating any
+        nested partition directories (e.g. 'equities/AAPL/file.parquet').
+        Writes atomically via a temp file + rename so a crash mid-write
+        never leaves a corrupt file at the destination path.
+
+        Raises on failure rather than swallowing the exception, so
+        callers (e.g. Prefect tasks) can retry.
         """
         if df is None or df.empty:
-            print("No data provided to save.")
+            logger.warning("No data provided to save — skipping.")
             return False
 
         file_path = os.path.join(self.base_path, filename)
+        dir_path = os.path.dirname(file_path)
+        os.makedirs(dir_path, exist_ok=True)
+
+        fd, tmp_path = tempfile.mkstemp(suffix=".parquet.tmp", dir=dir_path)
+        os.close(fd)
 
         try:
-            # index=False prevents pandas from saving the DataFrame index as an unnamed column
-            df.to_parquet(file_path, index=False)
-            print(f"Data successfully saved to {file_path}")
+            df.to_parquet(tmp_path, index=False)
+            os.replace(tmp_path, file_path)
+            logger.info(f"Data successfully saved to {file_path} ({len(df)} rows)")
             return True
         except Exception as e:
-            print(f"Failed to save Parquet file: {e}")
-            return False
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            logger.error(f"Failed to save Parquet file at {file_path}: {e}")
+            raise
