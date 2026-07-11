@@ -1,24 +1,28 @@
 import json
 import random
+import os
 from datetime import timedelta
 
 from prefect import flow, task, get_run_logger
 from prefect.tasks import task_input_hash
 
-from extractors.yfinance_extractor import YFinanceExtractor
-from extractors.alpaca_extractor import AlpacaExtractor
+# 1. FIXED IMPORTS: The files are in the same directory
+from yfinance_extractor import YFinanceExtractor
+from alpaca_extractor import AlpacaExtractor
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_CONFIG = os.path.join(BASE_DIR, "tickers.json")
 
 def load_config(path: str) -> dict:
     with open(path, 'r') as f:
         return json.load(f)
-
 
 @task(
     retries=4,
     retry_delay_seconds=lambda attempt: min(60, (2 ** attempt) + random.uniform(0, 1)),
     cache_key_fn=task_input_hash,
     cache_expiration=timedelta(hours=6),
+    persist_result=True
 )
 def run_yfinance_ticker(ticker: str, asset_class: str, lookback_years: int):
     logger = get_run_logger()
@@ -35,6 +39,7 @@ def run_yfinance_ticker(ticker: str, asset_class: str, lookback_years: int):
     retry_delay_seconds=10,
     cache_key_fn=task_input_hash,
     cache_expiration=timedelta(hours=6),
+    persist_result=True
 )
 def run_alpaca_ticker(ticker: str, asset_class: str, lookback_years: int):
     logger = get_run_logger()
@@ -47,7 +52,7 @@ def run_alpaca_ticker(ticker: str, asset_class: str, lookback_years: int):
 
 
 @flow(name="yfinance-extraction-flow", log_prints=True)
-def yfinance_flow(config_path: str = "/app/pipeline/yfinance_tickers.json", lookback_years: int = 5):
+def yfinance_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 5):
     config = load_config(config_path)
     results = []
     for asset_class, tickers in config.items():
@@ -57,7 +62,7 @@ def yfinance_flow(config_path: str = "/app/pipeline/yfinance_tickers.json", look
 
 
 @flow(name="alpaca-extraction-flow", log_prints=True)
-def alpaca_flow(config_path: str = "/app/pipeline/alpaca_tickers.json", lookback_years: int = 5):
+def alpaca_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 5):
     config = load_config(config_path)
     results = []
     for asset_class, tickers in config.items():
@@ -68,8 +73,7 @@ def alpaca_flow(config_path: str = "/app/pipeline/alpaca_tickers.json", lookback
 
 @flow(name="market-data-extraction-parent", log_prints=True)
 def run_all_sources(lookback_years: int = 5):
-    """Parent flow — this is what you schedule in Prefect (Deployments/work pool),
-    not cron. Both subflows get independent retry/cache behavior."""
+    """Parent flow — this is what you schedule in Prefect."""
     yfinance_flow(lookback_years=lookback_years)
     alpaca_flow(lookback_years=lookback_years)
 
