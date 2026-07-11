@@ -1,12 +1,14 @@
 import json
 import random
 import os
+import sys
 from datetime import timedelta
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from prefect import flow, task, get_run_logger
 from prefect.tasks import task_input_hash
 
-# 1. FIXED IMPORTS: The files are in the same directory
 from yfinance_extractor import YFinanceExtractor
 from alpaca_extractor import AlpacaExtractor
 
