@@ -70,6 +70,10 @@ def alpaca_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 5):
     config = load_config(config_path)
     results = []
     for asset_class, tickers in config.items():
+        if asset_class != "stocks":
+            print(f"[alpaca] Skipping asset class: {asset_class}")
+            continue
+
         for ticker in tickers:
             results.append(run_alpaca_ticker(ticker, asset_class, lookback_years))
     print(f"alpaca flow complete: {sum(results)}/{len(results)} tickers succeeded")

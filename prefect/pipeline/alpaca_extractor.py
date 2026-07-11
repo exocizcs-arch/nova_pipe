@@ -45,7 +45,7 @@ class AlpacaExtractor:
             bars = self.client.get_stock_bars(request)
         except Exception as e:
             logger.error(f"[alpaca] Fetch failed for {ticker}: {e}")
-            raise
+            return None
 
         df = bars.df
         if df.empty:
