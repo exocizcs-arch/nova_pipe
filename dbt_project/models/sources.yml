@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: landing_zone
+    description: "Raw Parquet files from our data extractors"
+    tables:
+      - name: alpaca_stocks
+        meta:
+          external_location: "../data/general_data/landing_zone/alpaca/stocks/*/*.parquet"
+      - name: yfinance_stocks
+        meta:
+          external_location: "../data/general_data/landing_zone/yfinance/stocks/*/*.parquet"

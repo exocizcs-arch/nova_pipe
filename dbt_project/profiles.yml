@@ -1,0 +1,7 @@
+nova_pipe:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/general_data/analytics.duckdb
+      threads: 4
