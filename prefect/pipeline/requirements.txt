@@ -4,3 +4,4 @@ pyarrow
 duckdb
 prefect
 alpaca-py
+dbt-duckdb
