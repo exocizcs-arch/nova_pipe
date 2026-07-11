@@ -2,6 +2,8 @@ import json
 import random
 import os
 import sys
+
+from pathlib import Path
 from datetime import timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -13,7 +15,7 @@ from yfinance_extractor import YFinanceExtractor
 from alpaca_extractor import AlpacaExtractor
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_CONFIG = os.path.join(BASE_DIR, "tickers.json")
+DEFAULT_CONFIG = str(Path(__file__).resolve().parent.parent / "tickers.json")
 
 def load_config(path: str) -> dict:
     with open(path, 'r') as f:
