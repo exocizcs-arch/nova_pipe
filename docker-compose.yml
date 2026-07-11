@@ -86,11 +86,11 @@ services:
   dbt-transformer:
     image: python:3.11-slim
     container_name: dbt-transformer
-    command: >
-      bash -c "pip install dbt-duckdb && tail -f /dev/null"
+    command: bash -c 'pip install dbt-duckdb && tail -f /dev/null'
     volumes:
-      - ./data/general_data:/data
-      - ./elt:/elt
+      - ./dbt_project:/app/dbt_project
+      - ./data:/app/data
+    working_dir: /app/dbt_project
     deploy:
       resources:
         limits:
