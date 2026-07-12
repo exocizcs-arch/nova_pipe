@@ -2,6 +2,7 @@ import json
 import random
 import os
 import sys
+import duckdb
 import subprocess
 
 from pathlib import Path
