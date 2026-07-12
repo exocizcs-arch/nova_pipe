@@ -33,6 +33,7 @@ services:
     volumes:
       - ./data/general_data:/data
       - ./prefect/pipeline:/app/pipeline
+      - ./dbt_project:/app/dbt_project
     env_file:
       - .env
     command: prefect worker start --pool 'default-agent-pool'

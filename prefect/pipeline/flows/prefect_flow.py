@@ -2,6 +2,7 @@ import json
 import random
 import os
 import sys
+import subprocess
 
 from pathlib import Path
 from datetime import timedelta
@@ -55,6 +56,24 @@ def run_alpaca_ticker(ticker: str, asset_class: str, lookback_years: int):
     return df is not None
 
 
+@task(name="Run dbt Transformations", log_prints=True)
+def run_dbt_models():
+    print("Starting dbt transformation...")
+    result = subprocess.run(
+        ["dbt", "run", "--profiles-dir", "."],
+        cwd="/app/dbt_project",
+        capture_output=True,
+        text=True
+    )
+
+    print(result.stdout)
+
+    if result.returncode != 0:
+        print(result.stderr)
+        raise Exception("dbt run failed! Check logs.")
+
+    print("dbt transformation complete!")
+
 @flow(name="yfinance-extraction-flow", log_prints=True)
 def yfinance_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 5):
     config = load_config(config_path)
@@ -86,5 +105,12 @@ def run_all_sources(lookback_years: int = 5):
     alpaca_flow(lookback_years=lookback_years)
 
 
+@flow(name="Master ELT Pipeline", log_prints=True)
+def master_elt_flow(lookback_years: int = 5):
+    run_all_sources(lookback_years=lookback_years)
+
+    run_dbt_models()
+
+
 if __name__ == "__main__":
-    run_all_sources(lookback_years=5)
+    master_elt_flow(lookback_years=5)
