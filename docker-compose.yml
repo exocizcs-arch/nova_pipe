@@ -31,7 +31,7 @@ services:
     container_name: prefect-worker
     restart: always
     volumes:
-      - ./data/general_data:/data
+      - ./data:/app/data
       - ./prefect/pipeline:/app/pipeline
       - ./dbt_project:/app/dbt_project
     env_file:
