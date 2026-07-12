@@ -3,5 +3,5 @@ nova_pipe:
   outputs:
     dev:
       type: duckdb
-      path: ../data/general_data/analytics.duckdb
+      path: /app/data/general_data/analytics.duckdb
       threads: 4
