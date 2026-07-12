@@ -6,6 +6,7 @@ import subprocess
 
 from pathlib import Path
 from datetime import timedelta
+from sqlalchemy import create_engine
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -74,6 +75,35 @@ def run_dbt_models():
 
     print("dbt transformation complete!")
 
+
+@task(name="Sync to Hostinger MySQL", log_prints=True)
+def push_to_hostinger():
+    print("Reading transformed data from DuckDB...")
+
+    duckdb_path = "/app/data/general_data/analytics.duckdb"
+    con = duckdb.connect(duckdb_path, read_only=True)
+    clean_df = con.execute("SELECT * FROM stg_combined_stocks").df()
+    con.close()
+
+    db_host = os.getenv("HOSTINGER_DB_HOST")
+    db_user = os.getenv("HOSTINGER_DB_USER")
+    db_pass = os.getenv("HOSTINGER_DB_PASS")
+    db_name = os.getenv("HOSTINGER_DB_NAME")
+
+    mysql_url = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}"
+    engine = create_engine(mysql_url)
+
+    print(f"Pushing {len(clean_df)} rows to Hostinger MySQL database...")
+
+    clean_df.to_sql(
+        name="daily_stock_prices",
+        con=engine,
+        if_exists="replace",
+        index=False
+    )
+
+    print("Successfully synced to Hostinger!")
+
 @flow(name="yfinance-extraction-flow", log_prints=True)
 def yfinance_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 5):
     config = load_config(config_path)
@@ -108,9 +138,15 @@ def run_all_sources(lookback_years: int = 5):
 @flow(name="Master ELT Pipeline", log_prints=True)
 def master_elt_flow(lookback_years: int = 5):
     run_all_sources(lookback_years=lookback_years)
-
     run_dbt_models()
+    push_to_hostinger()
 
 
 if __name__ == "__main__":
-    master_elt_flow(lookback_years=5)
+    master_elt_flow.deploy(
+        name="daily-market-sync",
+        work_pool_name="default-agent-pool",
+        cron="0 6 * * 2-6",
+        timezone="Asia/Kuala_Lumpur",
+        parameters={"lookback_years": 5}
+    )

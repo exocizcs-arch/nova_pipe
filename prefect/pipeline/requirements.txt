@@ -5,3 +5,5 @@ duckdb
 prefect
 alpaca-py
 dbt-duckdb
+SQLAlchemy
+pymysql
