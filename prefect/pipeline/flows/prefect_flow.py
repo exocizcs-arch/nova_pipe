@@ -144,11 +144,10 @@ def master_elt_flow(lookback_years: int = 5):
 
 
 if __name__ == "__main__":
-    master_elt_flow(lookback_years=5)
-    # master_elt_flow.deploy(
-    #     name="daily-market-sync",
-    #     work_pool_name="default-agent-pool",
-    #     cron="0 6 * * 2-6",
-    #     timezone="Asia/Kuala_Lumpur",
-    #     parameters={"lookback_years": 5}
-    # )
+    master_elt_flow.deploy(
+        name="daily-market-sync",
+        work_pool_name="default-agent-pool",
+        cron="0 6 * * 2-6",
+        timezone="Asia/Kuala_Lumpur",
+        parameters={"lookback_years": 5}
+    )
