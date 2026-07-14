@@ -144,9 +144,14 @@ def master_elt_flow(lookback_years: int = 5):
 
 
 if __name__ == "__main__":
-    master_elt_flow.deploy(
+    master_elt_flow.from_source(
+        source="/app/pipeline/flows",
+        entrypoint="prefect_flow.py:master_elt_flow"
+    ).deploy(
         name="daily-market-sync",
         work_pool_name="default-agent-pool",
         cron="0 22 * * 1-5",
+        build=False,
+        push=False,
         parameters={"lookback_years": 5}
     )
