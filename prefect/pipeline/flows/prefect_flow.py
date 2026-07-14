@@ -136,21 +136,47 @@ def run_all_sources(lookback_years: int = 5):
     alpaca_flow(lookback_years=lookback_years)
 
 
-@flow(name="Master ELT Pipeline", log_prints=True)
+@flow(name="Master ELT Pipeline")
 def master_elt_flow(lookback_years: int = 5):
-    run_all_sources(lookback_years=lookback_years)
-    run_dbt_models()
-    push_to_hostinger()
+    logger = get_run_logger()
 
+    successful_pulls = 0
+
+    try:
+        logger.info("Attempting Alpaca extraction...")
+        run_alpaca_extraction(lookback_years)
+        successful_pulls += 1
+    except Exception as e:
+        if "429" in str(e) or "rate limit" in str(e).lower():
+            logger.warning("Alpaca rate limit hit! Skipping dynamically for this run.")
+        else:
+            logger.error(f"Alpaca failed due to an unexpected error: {e}")
+
+    try:
+        logger.info("Attempting YFinance extraction...")
+        run_yfinance_extraction(lookback_years)
+        successful_pulls += 1
+    except Exception as e:
+        if "429" in str(e) or "too many requests" in str(e).lower():
+            logger.warning("YFinance rate limit hit! Skipping dynamically for this run.")
+        else:
+            logger.warning(f"YFinance skipped or failed: {e}")
+
+    if successful_pulls > 0:
+        logger.info("Proceeding with transformation and sync for successful data streams.")
+        run_dbt_transformations()
+        push_to_hostinger()
+    else:
+        logger.warning("All data sources skipped or rate-limited this turn. Nothing new to process.")
 
 if __name__ == "__main__":
     master_elt_flow.from_source(
         source="/app/pipeline/flows",
         entrypoint="prefect_flow.py:master_elt_flow"
     ).deploy(
-        name="daily-market-sync",
+        name="dynamic-10min-sync",
         work_pool_name="default-agent-pool",
-        cron="0 22 * * 1-5",
+        interval=600,
         build=False,
         push=False,
         parameters={"lookback_years": 5}
