@@ -147,7 +147,6 @@ if __name__ == "__main__":
     master_elt_flow.deploy(
         name="daily-market-sync",
         work_pool_name="default-agent-pool",
-        cron="0 6 * * 2-6",
-        timezone="Asia/Kuala_Lumpur",
+        cron="0 22 * * 1-5",
         parameters={"lookback_years": 5}
     )

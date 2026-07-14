@@ -18,8 +18,9 @@ class YFinanceExtractor:
 
     def __init__(self, lookback_years=5, base_path="/data/landing_zone/yfinance"):
         self.lookback_years = lookback_years
-        self.end_date = datetime.today().strftime('%Y-%m-%d')
-        self.start_date = (datetime.today() - timedelta(days=lookback_years * 365)).strftime('%Y-%m-%d')
+        today = datetime.today()
+        self.end_date = (today + timedelta(days=1)).strftime('%Y-%m-%d')
+        self.start_date = (today - timedelta(days=lookback_years * 365)).strftime('%Y-%m-%d')
         self.storage = DataLakeStorage(base_path=base_path)
 
     def fetch_single_ticker(self, ticker: str, asset_class: str, interval: str = "1d") -> pd.DataFrame | None:
@@ -32,7 +33,7 @@ class YFinanceExtractor:
             )
         except Exception as e:
             logger.error(f"[yfinance] Fetch failed for {ticker}: {e}")
-            raise  # let the caller (Prefect task) decide whether to retry
+            raise
 
         if df.empty:
             logger.warning(f"[yfinance] No data returned for {ticker}")
@@ -54,7 +55,6 @@ class YFinanceExtractor:
         df['Currency'] = currency
         df = df.reset_index()
 
-        # small jitter to avoid hammering Yahoo at a fixed cadence
         time.sleep(random.uniform(0.5, 1.5))
         return df
 

@@ -1,7 +1,7 @@
 import os
 import logging
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
@@ -21,7 +21,7 @@ class AlpacaExtractor:
 
     def __init__(self, lookback_years=5, base_path="/data/landing_zone/alpaca"):
         self.lookback_years = lookback_years
-        self.end_date = datetime.today()
+        self.end_date = datetime.now(timezone.utc)
         self.start_date = self.end_date - timedelta(days=lookback_years * 365)
         self.storage = DataLakeStorage(base_path=base_path)
 
@@ -38,7 +38,7 @@ class AlpacaExtractor:
             timeframe=timeframe,
             start=self.start_date,
             end=self.end_date,
-            feed=DataFeed.IEX,  # free tier
+            feed=DataFeed.IEX,
         )
 
         try:
