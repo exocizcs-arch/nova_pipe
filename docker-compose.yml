@@ -12,7 +12,7 @@ services:
     env_file:
       - .env
     environment:
-      - PREFECT_API_URL=http://127.0.0.1:4200/api
+      - PREFECT_UI_API_URL=/api
     volumes:
       - ./data/prefect_data:/root/.prefect
     ports:
@@ -39,7 +39,7 @@ services:
     env_file:
       - .env
     environment:
-      - PREFECT_API_URL=http://127.0.0.1:4200/api
+      - PREFECT_API_URL=http://prefect-server:4200/api
     command: prefect worker start --pool 'default-agent-pool'
     deploy:
       resources:
