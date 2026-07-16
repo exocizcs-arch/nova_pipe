@@ -144,7 +144,7 @@ def master_elt_flow(lookback_years: int = 5):
 
     try:
         logger.info("Attempting Alpaca extraction...")
-        run_alpaca_extraction(lookback_years)
+        alpaca_flow(lookback_years=lookback_years)
         successful_pulls += 1
     except Exception as e:
         if "429" in str(e) or "rate limit" in str(e).lower():
@@ -154,7 +154,7 @@ def master_elt_flow(lookback_years: int = 5):
 
     try:
         logger.info("Attempting YFinance extraction...")
-        run_yfinance_extraction(lookback_years)
+        yfinance_flow(lookback_years=lookback_years)
         successful_pulls += 1
     except Exception as e:
         if "429" in str(e) or "too many requests" in str(e).lower():
@@ -164,7 +164,7 @@ def master_elt_flow(lookback_years: int = 5):
 
     if successful_pulls > 0:
         logger.info("Proceeding with transformation and sync for successful data streams.")
-        run_dbt_transformations()
+        run_dbt_models()
         push_to_hostinger()
     else:
         logger.warning("All data sources skipped or rate-limited this turn. Nothing new to process.")
