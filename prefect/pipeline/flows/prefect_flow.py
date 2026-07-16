@@ -27,8 +27,8 @@ def load_config(path: str) -> dict:
 @task(
     retries=4,
     retry_delay_seconds=lambda attempt: min(60, (2 ** attempt) + random.uniform(0, 1)),
-    cache_key_fn=task_input_hash,
-    cache_expiration=timedelta(hours=6),
+    # cache_key_fn=task_input_hash,
+    # cache_expiration=timedelta(hours=6),
     persist_result=True
 )
 def run_yfinance_ticker(ticker: str, asset_class: str, lookback_years: int):
@@ -44,8 +44,8 @@ def run_yfinance_ticker(ticker: str, asset_class: str, lookback_years: int):
 @task(
     retries=3,
     retry_delay_seconds=10,
-    cache_key_fn=task_input_hash,
-    cache_expiration=timedelta(hours=6),
+    # cache_key_fn=task_input_hash,
+    # cache_expiration=timedelta(hours=6),
     persist_result=True
 )
 def run_alpaca_ticker(ticker: str, asset_class: str, lookback_years: int):
