@@ -164,8 +164,8 @@ def master_elt_flow(lookback_years: int = 5):
 
     if successful_pulls > 0:
         logger.info("Proceeding with transformation and sync for successful data streams.")
-        # run_dbt_models()
-        # push_to_hostinger()
+        run_dbt_models()
+        push_to_hostinger()
     else:
         logger.warning("All data sources skipped or rate-limited this turn. Nothing new to process.")
 
