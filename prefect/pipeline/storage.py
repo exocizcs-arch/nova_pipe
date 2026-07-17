@@ -12,7 +12,8 @@ class DataLakeStorage:
     Can be imported and used by any future extraction script.
     """
 
-    def __init__(self, base_path="/data/landing_zone"):
+    # UPDATE: Changed the default base_path to match the Docker volume mount
+    def __init__(self, base_path="/app/data/general_data/landing_zone"):
         self.base_path = base_path
         os.makedirs(self.base_path, exist_ok=True)
 
