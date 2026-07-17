@@ -164,20 +164,25 @@ def master_elt_flow(lookback_years: int = 5):
 
     if successful_pulls > 0:
         logger.info("Proceeding with transformation and sync for successful data streams.")
-        run_dbt_models()
-        push_to_hostinger()
+        # run_dbt_models()
+        # push_to_hostinger()
     else:
         logger.warning("All data sources skipped or rate-limited this turn. Nothing new to process.")
 
 if __name__ == "__main__":
-    master_elt_flow.from_source(
-        source="/app/pipeline/flows",
-        entrypoint="prefect_flow.py:master_elt_flow"
-    ).deploy(
-        name="dynamic-10min-sync",
-        work_pool_name="default-agent-pool",
-        interval=600,
-        build=False,
-        push=False,
-        parameters={"lookback_years": 5}
-    )
+    if len(sys.argv) > 1 and sys.argv[1] == "--deploy":
+        print("Registering deployment with Prefect...")
+        master_elt_flow.from_source(
+            source="/app/pipeline/flows",
+            entrypoint="prefect_flow.py:master_elt_flow"
+        ).deploy(
+            name="dynamic-10min-sync",
+            work_pool_name="default-agent-pool",
+            interval=600,
+            build=False,
+            push=False,
+            parameters={"lookback_years": 5}
+        )
+    else:
+        print("Running pipeline manually...")
+        master_elt_flow(lookback_years=5)
