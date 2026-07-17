@@ -19,7 +19,7 @@ class AlpacaExtractor:
     treat both sources uniformly.
     """
 
-    def __init__(self, lookback_years=5, base_path="/data/landing_zone/alpaca"):
+    def __init__(self, lookback_years=5, base_path="/app/data/general_data/landing_zone/alpaca"):
         self.lookback_years = lookback_years
         self.end_date = datetime.now(timezone.utc)
         self.start_date = self.end_date - timedelta(days=lookback_years * 365)

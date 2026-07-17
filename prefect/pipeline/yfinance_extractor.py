@@ -16,7 +16,7 @@ class YFinanceExtractor:
     Retries/scheduling are handled by the orchestration flow.
     """
 
-    def __init__(self, lookback_years=5, base_path="/data/landing_zone/yfinance"):
+    def __init__(self, lookback_years=5, base_path="/app/data/general_data/landing_zone/yfinance"):
         self.lookback_years = lookback_years
         today = datetime.today()
         self.end_date = (today + timedelta(days=1)).strftime('%Y-%m-%d')
