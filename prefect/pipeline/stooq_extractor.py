@@ -58,7 +58,10 @@ class StooqExtractor:
 
         text = resp.text.strip()
         if not text or text.lower().startswith("no data") or "<html" in text.lower():
-            logger.warning(f"[stooq] No data returned for {ticker} ({symbol})")
+            logger.warning(
+                f"[stooq] No data returned for {ticker} ({symbol}) — "
+                f"status={resp.status_code}, body preview: {text[:150]!r}"
+            )
             return None
 
         df = pd.read_csv(StringIO(text))

@@ -55,6 +55,11 @@ class BLSExtractor:
             return None
 
         df = pd.DataFrame(series_list[0]["data"])
+        # BLS includes a 'footnotes' field per observation, almost always an
+        # empty list — pyarrow can't infer a parquet schema for an all-empty
+        # list column ("struct with no child field"), so drop it rather than
+        # try to preserve it.
+        df = df.drop(columns=["footnotes"], errors="ignore")
         df["value"] = pd.to_numeric(df["value"], errors="coerce")
         df["period_date"] = pd.to_datetime(
             df["year"] + "-" + df["period"].str.replace("M", "").str.zfill(2) + "-01",

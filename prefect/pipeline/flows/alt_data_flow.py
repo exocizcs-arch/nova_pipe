@@ -16,7 +16,7 @@ from stocktwits_extractor import StockTwitsExtractor
 from alpha_vantage_news_extractor import AlphaVantageNewsExtractor
 from gdelt_extractor import GDELTExtractor
 from rss_extractor import RSSExtractor
-from google_trends_extractor import GoogleTrendsExtractor
+from wiki_extractor import WikipediaPageviewsExtractor
 from bls_extractor import BLSExtractor
 
 DEFAULT_CONFIG = str(Path(__file__).resolve().parent.parent / "config.json")
@@ -125,13 +125,13 @@ def run_rss_feed(feed_name: str, feed_url: str, asset_class: str):
 
 
 @task(retries=2, retry_delay_seconds=30, persist_result=True)
-def run_google_trends_ticker(ticker: str, asset_class: str, lookback_years: int):
+def run_wikipedia_pageviews_ticker(ticker: str, asset_class: str, lookback_years: int):
     logger = get_run_logger()
-    extractor = GoogleTrendsExtractor(lookback_years=lookback_years)
+    extractor = WikipediaPageviewsExtractor(lookback_years=lookback_years)
     df = extractor.fetch_single_ticker(ticker, asset_class)
     if df is not None:
         extractor.save(df, ticker, asset_class)
-        logger.info(f"[google_trends] Saved {len(df)} rows for {ticker}")
+        logger.info(f"[wikipedia_pageviews] Saved {len(df)} rows for {ticker}")
     return df is not None
 
 
@@ -239,14 +239,14 @@ def rss_flow(config_path: str = DEFAULT_CONFIG):
     print(f"rss flow complete: {sum(results)}/{len(results)} feeds succeeded")
 
 
-@flow(name="google-trends-extraction-flow", log_prints=True)
-def google_trends_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 1):
+@flow(name="wikipedia-pageviews-extraction-flow", log_prints=True)
+def wikipedia_pageviews_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 1):
     config = load_config(config_path)
     results = [
-        run_google_trends_ticker(ticker, "stocks", lookback_years)
+        run_wikipedia_pageviews_ticker(ticker, "stocks", lookback_years)
         for ticker in config.get("stocks", [])
     ]
-    print(f"google_trends flow complete: {sum(results)}/{len(results)} tickers succeeded")
+    print(f"wikipedia_pageviews flow complete: {sum(results)}/{len(results)} tickers succeeded")
 
 
 @flow(name="bls-extraction-flow", log_prints=True)
@@ -281,7 +281,7 @@ def alt_data_extraction_parent(price_lookback_years: int = 5, macro_lookback_yea
         ("alpha_vantage_news", alpha_vantage_news_flow),
         ("gdelt", lambda: gdelt_flow(lookback_years=trends_lookback_years)),
         ("rss", rss_flow),
-        ("google_trends", lambda: google_trends_flow(lookback_years=trends_lookback_years)),
+        ("wikipedia_pageviews", lambda: wikipedia_pageviews_flow(lookback_years=trends_lookback_years)),
         ("bls", lambda: bls_flow(lookback_years=macro_lookback_years)),
     ]
 

@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
 
+# GDELT indexes article text, not ticker symbols — map to a search-friendly
+# company name/keyword. Extend as you add tickers to tickers.json.
 TICKER_TO_KEYWORD = {
     "AAPL": "Apple",
     "MSFT": "Microsoft",
@@ -39,6 +41,8 @@ class GDELTExtractor:
 
         logger.info(f"[gdelt] Fetching news tone timeline for {ticker} ({keyword})")
 
+        # GDELT's max lookback via 'timespan' is a rolling window; longer
+        # windows sacrifice date granularity, so cap at a sane default.
         timespan = f"{min(self.lookback_years, 3) * 12}m"
         params = {
             "query": keyword,
@@ -49,6 +53,12 @@ class GDELTExtractor:
 
         try:
             resp = requests.get(GDELT_DOC_API_URL, params=params, timeout=20)
+            if resp.status_code == 429:
+                # GDELT's rate limit isn't documented precisely — back off
+                # hard and retry once rather than giving up immediately.
+                logger.warning(f"[gdelt] Rate limited for {ticker}, waiting 20s and retrying once")
+                time.sleep(20)
+                resp = requests.get(GDELT_DOC_API_URL, params=params, timeout=20)
             resp.raise_for_status()
             payload = resp.json()
         except Exception as e:
@@ -71,7 +81,7 @@ class GDELTExtractor:
         df["Keyword"] = keyword
         df["Asset_Class"] = asset_class
 
-        time.sleep(0.5)  # no documented limit, but stay polite to a free public service
+        time.sleep(3.0)  # widened from 0.5s after hitting 429s at that pace
         return df
 
     def save(self, df: pd.DataFrame, ticker: str, asset_class: str):
