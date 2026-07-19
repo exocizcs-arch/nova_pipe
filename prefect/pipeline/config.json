@@ -1,0 +1,40 @@
+{
+  "stocks": [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN"
+  ],
+  "forex": [
+    "EURUSD=X",
+    "JPY=X",
+    "GBPUSD=X"
+  ],
+  "crypto": [
+    "BTC-USD",
+    "ETH-USD"
+  ],
+  "fred_series": {
+    "macro": [
+      "DFF",
+      "CPIAUCSL",
+      "UNRATE",
+      "DGS10",
+      "DTWEXBGS"
+    ]
+  },
+  "bls_series": {
+    "macro": [
+      "LNS14000000",
+      "CES0000000001",
+      "CES0500000003"
+    ]
+  },
+  "rss_feeds": {
+    "news": {
+      "cnbc_markets": "https://www.cnbc.com/id/20910258/device/rss/rss.html",
+      "marketwatch_top": "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+      "yahoo_finance_top": "https://finance.yahoo.com/rss/topstories"
+    }
+  }
+}

@@ -7,3 +7,5 @@ alpaca-py
 dbt-duckdb
 SQLAlchemy
 pymysql
+feedparser
+pytrends
