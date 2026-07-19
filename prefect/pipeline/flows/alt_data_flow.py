@@ -8,7 +8,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from prefect import flow, task, get_run_logger
 
-from stooq_extractor import StooqExtractor
 from coingecko_extractor import CoinGeckoExtractor
 from alpha_vantage_extractor import AlphaVantageExtractor
 from fmp_extractor import FMPExtractor
@@ -22,7 +21,7 @@ from bls_extractor import BLSExtractor
 DEFAULT_CONFIG = str(Path(__file__).resolve().parent.parent / "config.json")
 
 # Ticker-list keys only — mirrors PRICE_ASSET_CLASSES in prefect_flow.py so
-# stooq_flow doesn't mistake fred_series/bls_series/rss_feeds (dicts, not
+# price flows don't mistake fred_series/bls_series/rss_feeds (dicts, not
 # ticker lists) for an asset class.
 PRICE_ASSET_CLASSES = ["stocks", "forex", "crypto"]
 
@@ -35,17 +34,6 @@ def load_config(path: str) -> dict:
 # ---------------------------------------------------------------------------
 # Tasks — one per source, same retry/error pattern as prefect_flow.py
 # ---------------------------------------------------------------------------
-
-@task(retries=3, retry_delay_seconds=10, persist_result=True)
-def run_stooq_ticker(ticker: str, asset_class: str, lookback_years: int):
-    logger = get_run_logger()
-    extractor = StooqExtractor(lookback_years=lookback_years)
-    df = extractor.fetch_single_ticker(ticker, asset_class)
-    if df is not None:
-        extractor.save(df, ticker, asset_class)
-        logger.info(f"[stooq] Saved {len(df)} rows for {ticker}")
-    return df is not None
-
 
 @task(retries=3, retry_delay_seconds=30, persist_result=True)
 def run_coingecko_ticker(ticker: str, asset_class: str, lookback_years: int):
@@ -150,17 +138,6 @@ def run_bls_series(series_id: str, asset_class: str, lookback_years: int):
 # Flows — one per source, all reading from the single unified config.json
 # (ticker lists, fred_series, bls_series, and rss_feeds all live there)
 # ---------------------------------------------------------------------------
-
-@flow(name="stooq-extraction-flow", log_prints=True)
-def stooq_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 5):
-    config = load_config(config_path)
-    results = [
-        run_stooq_ticker(ticker, asset_class, lookback_years)
-        for asset_class in PRICE_ASSET_CLASSES
-        for ticker in config.get(asset_class, [])
-    ]
-    print(f"stooq flow complete: {sum(results)}/{len(results)} tickers succeeded")
-
 
 @flow(name="coingecko-extraction-flow", log_prints=True)
 def coingecko_flow(config_path: str = DEFAULT_CONFIG, lookback_years: int = 5):
@@ -273,7 +250,6 @@ def alt_data_extraction_parent(price_lookback_years: int = 5, macro_lookback_yea
     logger = get_run_logger()
 
     sub_flows = [
-        ("stooq", lambda: stooq_flow(lookback_years=price_lookback_years)),
         ("coingecko", lambda: coingecko_flow(lookback_years=price_lookback_years)),
         ("alpha_vantage", alpha_vantage_flow),
         ("fmp", lambda: fmp_flow(lookback_years=price_lookback_years)),

@@ -54,11 +54,15 @@ class GDELTExtractor:
         try:
             resp = requests.get(GDELT_DOC_API_URL, params=params, timeout=20)
             if resp.status_code == 429:
-                # GDELT's rate limit isn't documented precisely — back off
-                # hard and retry once rather than giving up immediately.
-                logger.warning(f"[gdelt] Rate limited for {ticker}, waiting 20s and retrying once")
-                time.sleep(20)
-                resp = requests.get(GDELT_DOC_API_URL, params=params, timeout=20)
+                # 20s wasn't enough in testing — GDELT's real limit is
+                # stricter than documented anywhere. Retry twice with a
+                # longer wait before giving up.
+                for wait_seconds in (30, 45):
+                    logger.warning(f"[gdelt] Rate limited for {ticker}, waiting {wait_seconds}s and retrying")
+                    time.sleep(wait_seconds)
+                    resp = requests.get(GDELT_DOC_API_URL, params=params, timeout=20)
+                    if resp.status_code != 429:
+                        break
             resp.raise_for_status()
             payload = resp.json()
         except Exception as e:
@@ -81,7 +85,7 @@ class GDELTExtractor:
         df["Keyword"] = keyword
         df["Asset_Class"] = asset_class
 
-        time.sleep(3.0)  # widened from 0.5s after hitting 429s at that pace
+        time.sleep(10.0)  # widened again — 3s still triggered 429s on 3/4 tickers in testing
         return df
 
     def save(self, df: pd.DataFrame, ticker: str, asset_class: str):

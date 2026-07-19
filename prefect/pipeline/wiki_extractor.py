@@ -3,6 +3,7 @@ import logging
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
+from urllib.parse import quote
 
 from storage import DataLakeStorage
 
@@ -59,7 +60,7 @@ class WikipediaPageviewsExtractor:
 
         logger.info(f"[wikipedia_pageviews] Fetching pageviews for {ticker} ({article})")
 
-        url = WIKI_PAGEVIEWS_URL.format(article=article, start=self.start_date, end=self.end_date)
+        url = WIKI_PAGEVIEWS_URL.format(article=quote(article, safe=""), start=self.start_date, end=self.end_date)
 
         try:
             resp = requests.get(url, headers=self.headers, timeout=15)
