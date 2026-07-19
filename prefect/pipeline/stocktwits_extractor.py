@@ -9,6 +9,14 @@ from storage import DataLakeStorage
 logger = logging.getLogger(__name__)
 
 STOCKTWITS_URL = "https://api.stocktwits.com/api/2/streams/symbol/{ticker}.json"
+# Same situation as Stooq: the public endpoint works fine in a browser but
+# 403s requests-library's default User-Agent.
+STOCKTWITS_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    )
+}
 
 
 class StockTwitsExtractor:
@@ -27,7 +35,7 @@ class StockTwitsExtractor:
         logger.info(f"[stocktwits] Fetching sentiment stream for {ticker}")
 
         try:
-            resp = requests.get(STOCKTWITS_URL.format(ticker=ticker), timeout=15)
+            resp = requests.get(STOCKTWITS_URL.format(ticker=ticker), headers=STOCKTWITS_HEADERS, timeout=15)
             resp.raise_for_status()
             payload = resp.json()
         except Exception as e:

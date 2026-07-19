@@ -9,14 +9,20 @@ from storage import DataLakeStorage
 
 logger = logging.getLogger(__name__)
 
-FMP_RATIOS_URL = "https://financialmodelingprep.com/api/v3/ratios/{ticker}"
+FMP_RATIOS_URL = "https://financialmodelingprep.com/stable/ratios"
 
 
 class FMPExtractor:
     """Pulls free-tier financial ratios (P/E, ROE, current ratio, debt
-    ratios, etc.) from Financial Modeling Prep. Free tier: 250
-    requests/day, best coverage on US large/mid-caps — check coverage
-    for smaller tickers before relying on this. Requires a free API key.
+    ratios, etc.) from Financial Modeling Prep's *stable* API — the old
+    /api/v3/ratios/ path is a deprecated "legacy" endpoint that now
+    403s. If this still fails after the URL fix, FMP's docs page for
+    this endpoint pushes free-tier signups toward premium plans, so it's
+    possible /stable/ratios has also moved behind a paid tier since —
+    check the response body for a plan-upgrade message if so, rather
+    than assuming it's another URL change.
+    Free tier: 250 requests/day, best coverage on US large/mid-caps.
+    Requires a free API key.
     """
 
     def __init__(self, lookback_years=5, base_path="/app/data/general_data/landing_zone/fmp"):
@@ -33,10 +39,10 @@ class FMPExtractor:
     def fetch_single_ticker(self, ticker: str, asset_class: str = "stocks") -> pd.DataFrame | None:
         logger.info(f"[fmp] Fetching financial ratios for {ticker}")
 
-        params = {"period": "annual", "limit": self.lookback_years, "apikey": self.api_key}
+        params = {"symbol": ticker, "period": "annual", "limit": self.lookback_years, "apikey": self.api_key}
 
         try:
-            resp = requests.get(FMP_RATIOS_URL.format(ticker=ticker), params=params, timeout=15)
+            resp = requests.get(FMP_RATIOS_URL, params=params, timeout=15)
             resp.raise_for_status()
             payload = resp.json()
         except Exception as e:

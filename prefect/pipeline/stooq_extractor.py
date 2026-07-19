@@ -10,6 +10,14 @@ from storage import DataLakeStorage
 logger = logging.getLogger(__name__)
 
 STOOQ_URL = "https://stooq.com/q/d/l/"
+# Stooq's download endpoint 404s requests without a browser-like User-Agent —
+# this isn't a documented API, just what makes it stop rejecting the request.
+STOOQ_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    )
+}
 
 
 class StooqExtractor:
@@ -42,7 +50,7 @@ class StooqExtractor:
         logger.info(f"[stooq] Fetching {asset_class} data for {ticker} ({symbol})")
 
         try:
-            resp = requests.get(STOOQ_URL, params={"s": symbol, "i": "d"}, timeout=15)
+            resp = requests.get(STOOQ_URL, params={"s": symbol, "i": "d"}, headers=STOOQ_HEADERS, timeout=15)
             resp.raise_for_status()
         except Exception as e:
             logger.error(f"[stooq] Fetch failed for {ticker}: {e}")
