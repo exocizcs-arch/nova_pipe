@@ -60,7 +60,13 @@ class WikipediaPageviewsExtractor:
 
         logger.info(f"[wikipedia_pageviews] Fetching pageviews for {ticker} ({article})")
 
-        url = WIKI_PAGEVIEWS_URL.format(article=quote(article, safe=""), start=self.start_date, end=self.end_date)
+        # Wikimedia's own API examples use literal, unencoded parentheses in
+        # article titles (e.g. 'Python_(programming_language)') — encoding
+        # them as %28/%29 makes their router 404. Only encode characters
+        # that are genuinely unsafe in a URL path; leave ()!'*, etc. as-is.
+        url = WIKI_PAGEVIEWS_URL.format(
+            article=quote(article, safe="()!*'"), start=self.start_date, end=self.end_date
+        )
 
         try:
             resp = requests.get(url, headers=self.headers, timeout=15)
