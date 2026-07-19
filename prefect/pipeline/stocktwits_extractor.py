@@ -15,7 +15,9 @@ STOCKTWITS_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-    )
+    ),
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://stocktwits.com/",
 }
 
 
@@ -36,6 +38,14 @@ class StockTwitsExtractor:
 
         try:
             resp = requests.get(STOCKTWITS_URL.format(ticker=ticker), headers=STOCKTWITS_HEADERS, timeout=15)
+            if resp.status_code == 403:
+                # Observed intermittently — same ticker passes on one run and
+                # 403s on the next, suggesting probabilistic bot detection
+                # rather than a hard block. One backoff-and-retry clears it
+                # most of the time.
+                logger.warning(f"[stocktwits] 403 for {ticker}, waiting 10s and retrying once")
+                time.sleep(10)
+                resp = requests.get(STOCKTWITS_URL.format(ticker=ticker), headers=STOCKTWITS_HEADERS, timeout=15)
             resp.raise_for_status()
             payload = resp.json()
         except Exception as e:
@@ -63,7 +73,7 @@ class StockTwitsExtractor:
         df["Ticker"] = ticker
         df["Asset_Class"] = asset_class
 
-        time.sleep(1.0)  # stay well under the unauthenticated 200 req/hour cap
+        time.sleep(2.0)  # widened from 1.0s after seeing intermittent 403s at that pace
         return df
 
     def save(self, df: pd.DataFrame, ticker: str, asset_class: str):
